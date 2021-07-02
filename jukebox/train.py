@@ -315,7 +315,8 @@ def run(hps="teeny", port=29500, **kwargs):
     # Setup opt, ema and distributed_model.
     opt, shd, scalar = get_optimizer(model, hps)
     ema = get_ema(model, hps)
-    distributed_model = get_ddp(model, hps)
+    if hps.train:
+        distributed_model = get_ddp(model, hps)
 
     logger, metrics = init_logging(hps, local_rank, rank)
     logger.iters = model.step
@@ -333,7 +334,7 @@ def run(hps="teeny", port=29500, **kwargs):
 
         if hps.test:
             if ema: ema.swap()
-            test_metrics = evaluate(distributed_model, model, logger, metrics, data_processor, hps)
+            test_metrics = evaluate(model, model, logger, metrics, data_processor, hps)
             test_metrics['epoch'] = epoch
             if rank == 0:
                 print('Ema',' '.join([f'{key}: {val:0.4f}' for key,val in test_metrics.items()]))
